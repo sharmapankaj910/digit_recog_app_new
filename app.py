@@ -462,6 +462,7 @@ with left_col:
         width=280,
         drawing_mode="freedraw",
         key=canvas_key,
+        return_image_data=True,  # required since streamlit-drawable-canvas v0.10.0 — image_data is opt-in
     )
     st.caption("Black canvas, white stroke — matches MNIST's ink-on-background convention.")
 
