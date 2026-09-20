@@ -403,9 +403,6 @@ bin_threshold = st.sidebar.slider("⚫⚪ Binarization threshold", min_value=1, 
 pad_fraction = st.sidebar.slider("⬛ Square padding (border %)", min_value=0.0, max_value=0.5, value=0.2, step=0.05,
                                   help="Extra blank border added when squaring the digit.")
 
-if st.sidebar.button("🗑️ Clear Canvas"):
-    st.session_state["canvas_key"] = st.session_state.get("canvas_key", 0) + 1
-
 st.sidebar.markdown("---")
 show_nn_arch = st.sidebar.toggle("🧠 Show Neural Network Architecture", value=False,
                                   help="Displays the 3-layer network diagram + explanation.")
@@ -452,11 +449,24 @@ left_col, right_col = st.columns([1, 1.6])
 
 with left_col:
     st.subheader("Draw a digit")
+
+    tool_col1, tool_col2 = st.columns([1.4, 1])
+    with tool_col1:
+        draw_tool = st.radio("Tool", options=["🖊️ Draw", "🧹 Erase"], horizontal=True, label_visibility="collapsed")
+    with tool_col2:
+        if st.button("🗑️ Clear Canvas", use_container_width=True):
+            st.session_state["canvas_key"] = st.session_state.get("canvas_key", 0) + 1
+
+    # Erase mode draws with the same color as the background, which visually
+    # removes strokes without needing a separate eraser tool from the library.
+    active_stroke_color = "#FFFFFF" if draw_tool == "🖊️ Draw" else "#000000"
+    active_stroke_width = stroke_width if draw_tool == "🖊️ Draw" else stroke_width * 2
+
     canvas_key = f"canvas_{st.session_state.get('canvas_key', 0)}"
     canvas_result = st_canvas(
         fill_color="rgba(255, 255, 255, 1)",
-        stroke_width=stroke_width,
-        stroke_color="#FFFFFF",
+        stroke_width=active_stroke_width,
+        stroke_color=active_stroke_color,
         background_color="#000000",
         height=280,
         width=280,
@@ -465,12 +475,6 @@ with left_col:
         return_image_data=True,  # required since streamlit-drawable-canvas v0.10.0 — image_data is opt-in
     )
     st.caption("Black canvas, white stroke — matches MNIST's ink-on-background convention.")
-
-    true_label = st.selectbox(
-        "Optional: true label (for dataset building)",
-        options=["(none)"] + [str(i) for i in range(10)],
-        help="If you know what digit this is, tag it — useful for building a labeled training set."
-    )
 
     if batch_mode:
         st.info(f"📦 Batch Mode ON — {len(st.session_state['batch_digits'])} digit(s) collected so far.")
@@ -576,7 +580,7 @@ with right_col:
                 st.subheader("💾 Save & Export")
                 st.caption(f"Your saved digits are stored in `saved_digits/{username}.csv`.")
 
-                label_value = None if true_label == "(none)" else int(true_label)
+                label_value = None  # no manual label input in this UI — predictions are saved as-is
 
                 save_col1, save_col2 = st.columns(2)
                 with save_col1:
